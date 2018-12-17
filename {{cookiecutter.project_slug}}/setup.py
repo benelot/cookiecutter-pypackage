@@ -4,18 +4,38 @@
 """The setup script."""
 
 from setuptools import setup, find_packages
+try:
+    from pip.req import parse_requirements
+    from pip.download import PipSession
+except ImportError:
+    from pip._internal.req import parse_requirements
+    from pip._internal.download import PipSession
 
 with open('README.rst') as readme_file:
     readme = readme_file.read()
 
 with open('HISTORY.rst') as history_file:
     history = history_file.read()
+	
+parsed_requirements = parse_requirements(
+    'requirements/requirements_prod.txt',
+    session=PipSession()
+)
 
-requirements = [{%- if cookiecutter.command_line_interface|lower == 'click' %}'Click>=6.0',{%- endif %} ]
+parsed_test_requirements = parse_requirements(
+    'requirements/requirements_test.txt',
+    session=PipSession()
+)
+
+
+requirements = [str(ir.req) for ir in parsed_requirements]
+test_requirements = [str(tr.req) for tr in parsed_test_requirements]
+
+requirements = requirements + [{%- if cookiecutter.command_line_interface|lower == 'click' %}'Click>=6.0',{%- endif %} ]
 
 setup_requirements = [{%- if cookiecutter.use_pytest == 'y' %}'pytest-runner',{%- endif %} ]
 
-test_requirements = [{%- if cookiecutter.use_pytest == 'y' %}'pytest',{%- endif %} ]
+test_requirements = test_requirements + [{%- if cookiecutter.use_pytest == 'y' %}'pytest',{%- endif %} ]
 
 {%- set license_classifiers = {
     'MIT license': 'License :: OSI Approved :: MIT License',
@@ -59,7 +79,7 @@ setup(
     include_package_data=True,
     keywords='{{ cookiecutter.project_slug }}',
     name='{{ cookiecutter.project_slug }}',
-    packages=find_packages(include=['{{ cookiecutter.project_slug }}']),
+    packages=find_packages(),
     setup_requires=setup_requirements,
     test_suite='tests',
     tests_require=test_requirements,
